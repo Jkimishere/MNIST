@@ -44,24 +44,55 @@ class net(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
-        return x
+        return F.log_softmax(x, -1)
 
 if __name__ == '__main__':
-    model = net().to(device)
+    model = net().to (device)
 
-    loss_fn = nn.MSELoss()
+    loss_fn = nn.CrossEntropyLoss()
 
     optimizer = optim.Adam(model.parameters(), lr = 0.001)
 
     epochs = 30
 
+
+    
+    model.load_state_dict(torch.load('./MNIST.pth'))
+
+    model.eval()
+
+    with torch.inference_mode():
+        # for img, label in test_loader:
+        #     img, label = img.to(device), label.to(device)
+        #     out = model(img)
+        #     print(out)
+        #     loss = loss_fn(out, label)
+        img,label = next(iter(test_loader))
+
+        img, label = img.to(device), label.to(device)
+        outputs=model(img)
+        _, preds = torch.max(outputs, 1)
+        preds=preds.cpu().numpy()
+        classes=label.cpu().numpy()
+        print(preds)
+        print(classes)
+        import matplotlib.pyplot as plt
+        import numpy as np
+        plt.imshow(img[0].cpu().squeeze(0), cmap= 'gray')
+        plt.show()
+    # print(f'loss : {loss}')
+
+     
+
+
+
+
+def training_loop():
     for epoch in range(epochs):
         model.train() 
-        for i, data in enumerate(train_loader):
-            img, label = data
-            img, label = img.to(device), label.to(device).to(torch.float32)
+        for img, label in train_loader:
+            img, label = img.to(device), label.to(device)
             out = model(img)
-            print(out.shape)
             loss = loss_fn(out, label)
             optimizer.zero_grad()
             loss.backward()
@@ -73,6 +104,7 @@ if __name__ == '__main__':
 
     torch.save(model.state_dict(), './MNIST.pth')
 
+    #training loop
 
 
 
